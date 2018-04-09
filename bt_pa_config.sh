@@ -30,11 +30,12 @@ add_udev_rule() {
 }
 
 setup_bluetooth() {
-  echo "PRETTY_HOSTNAME=$BLUETOOTH_NAME" >> /etc/machine-info
+  echo "PRETTY_HOSTNAME=$BLUETOOTH_NAME" > /etc/machine-info
 
   #change bt name and class in /etc/bluetooth/main.conf
-  sed -i "s/^#Name.*/Name = ${BLUETOOTH_NAME}/" /etc/bluetooth/main.conf
-  sed -i "s/^#Class.*/Class = 0x200414/" /etc/bluetooth/main.conf
+  #TODO handle went name / class is alreday setted (no #) 
+  sed -i "s/^#Name = .*/Name = ${BLUETOOTH_NAME}/" /etc/bluetooth/main.conf
+  sed -i "s/^#Class = .*/Class = 0x200414/" /etc/bluetooth/main.conf
 
   #bluez
   cp usr/local/bin/bluez-udev /usr/local/bin
@@ -62,11 +63,11 @@ setup_pulse() {
   #add tsched=0 and module-bluetooth-discover
   sed -i "s/^load-module module-udev-detect.*/load-module module-udev-detect tsched=0/" /etc/pulse/system.pa
   if ! grep -Fxq "load-module module-bluetooth-discover" /etc/pulse/system.pa ; then
-    DISCOVER="### Automatically load driver modules for Bluetooth hardware
-.ifexists module-bluetooth-discover.so
-load-module module-bluetooth-discover
-.endif"
-  echo ${DISCOVER} >> /etc/pulse/system.pa
+    DISCOVER="" "### Automatically load driver modules for Bluetooth hardware"
+    ".ifexists module-bluetooth-discover.so"
+    "load-module module-bluetooth-discover"
+    ".endif"
+    echo ${DISCOVER} >> /etc/pulse/system.pa
   fi
 }
 
