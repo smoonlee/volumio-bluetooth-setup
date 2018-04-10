@@ -18,19 +18,22 @@ setup_volume_watcher() {
 setup_pulse_audio() {
   cp init.d/pulseaudio /etc/init.d/pulseaudio
   chmod +x /etc/init.d/pulseaudio
-  update-rc.d pulseaudio defaults
+  update-rc.d pulseaudio defaults > /dev/null
 }
+
+# TODO fix / change 
+# rules with https://gist.github.com/oleq/24e09112b07464acbda1#file-a2dp-autoconnect
 
 add_udev_rule() {
   #add udev rule to trigger script on device connection
   LINE="KERNEL==\"input[0-9]*\", RUN+=\"/usr/local/bin/bluez-udev\""
-  if ! grep -Fxq "${LINE}" /etc/udev/rules.d/99-com.rules ; then
-    echo "${LINE}" >> /etc/udev/rules.d/99-com.rules
-  fi
+  echo "${LINE}" > cat /etc/udev/rules.d/99-input.rules
 }
 
 setup_bluetooth() {
   echo "PRETTY_HOSTNAME=$BLUETOOTH_NAME" > /etc/machine-info
+
+  # FIXME add also /etc/bluetooth/audio.conf
 
   #change bt name and class in /etc/bluetooth/main.conf
   #TODO handle went name / class is alreday setted (no #) 
@@ -49,12 +52,12 @@ setup_bluetooth() {
   #bluetooth daemon
   cp init.d/bluetooth /etc/init.d/bluetooth
   chmod +x /etc/init.d/bluetooth
-  update-rc.d bluetooth defaults
+  update-rc.d bluetooth defaults > /dev/null
 
   #bluetooth agent
   cp init.d/bluetooth-agent-vol /etc/init.d/bluetooth-agent
   chmod +x /etc/init.d/bluetooth-agent
-  update-rc.d bluetooth-agent defaults
+  update-rc.d bluetooth-agent defaults > /dev/null
 }
 
 setup_pulse() {
@@ -63,18 +66,18 @@ setup_pulse() {
   #add tsched=0 and module-bluetooth-discover
   sed -i "s/^load-module module-udev-detect.*/load-module module-udev-detect tsched=0/" /etc/pulse/system.pa
   if ! grep -Fxq "load-module module-bluetooth-discover" /etc/pulse/system.pa ; then
-    DISCOVER="" "### Automatically load driver modules for Bluetooth hardware"
-    ".ifexists module-bluetooth-discover.so"
-    "load-module module-bluetooth-discover"
-    ".endif"
-    echo ${DISCOVER} >> /etc/pulse/system.pa
+    printf "%s\n" \
+    "### Automatically load driver modules for Bluetooth hardware" \
+    ".ifexists module-bluetooth-discover.so" \
+    "load-module module-bluetooth-discover" \
+    ".endif" >> /etc/pulse/system.pa
   fi
 }
 
 restart_services() {
-  service bluetooth start &
-  service pulseaudio start &
-  service bluetooth-agent start &
+  service bluetooth start
+  service pulseaudio start
+  service bluetooth-agent start
 }
 
 # setup sequence 
@@ -84,6 +87,8 @@ setup_pulse_audio
 add_udev_rule
 setup_bluetooth
 setup_pulse
+restart_services
+
 
 # BT FIX
 build-from-source() {
