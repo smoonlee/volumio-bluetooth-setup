@@ -1,4 +1,9 @@
-Martin Engstr�m (original BitBucket repository)
+# not sure just keeping names from : Super-Simple-Raspberry-Pi-Audio-Receiver-Install
+Martin Engstrom (original BitBucket repository)
 Aden Beckitt (2017 Raspbian Jessie rewrite)
 Brett Reinhard (2017 Raspbian Jessie minimal rewrite, added features)
 Totti2 (Snapcast Configuration)
+Brett Reinhard (Super-Simple-Raspberry-Pi-Audio-Receiver-Install)
+
+# plus the super nice A2DP script from https://gist.github.com/oleq/24e09112b07464acbda1
+Aleksander Nowodzinski (oleq)

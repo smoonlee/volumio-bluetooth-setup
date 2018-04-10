@@ -19,7 +19,7 @@ HCI=hci0
 case "${1}" in
     start)
        log_daemon_msg "Starting Bluetooth daemon bluetoothd..."
-       start-stop-daemon --start --background $SSD_OPTIONS
+       start-stop-daemon --start --background "${SSD_OPTIONS}"
        log_progress_msg "${DAEMON}"
 
        hciconfig $HCI up > /dev/null 2>&1
@@ -28,7 +28,7 @@ case "${1}" in
 
     stop)
         log_daemon_msg "Stopping Bluetooth daemon bluetoothd..."
-        start-stop-daemon --stop $SSD_OPTIONS
+        start-stop-daemon --stop "${SSD_OPTIONS}"
         log_progress_msg "${DAEMON}"
         log_end_msg 0
        ;;

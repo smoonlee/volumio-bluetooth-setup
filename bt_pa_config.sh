@@ -1,11 +1,30 @@
 #!/bin/bash
 
-get_bluetooth_name() {
+# most of the magic here comes from:
+# - https://gist.github.com/oleq/24e09112b07464acbda1
+# - https://github.com/BaReinhard/Super-Simple-Raspberry-Pi-Audio-Receiver-Install
+
+install_dependencies() {
+  #TODO clean up that mess probably not half of it is necessary
+  sudo apt install pulseaudio-module-bluetooth python-dbus libltdl-dev pulseaudio libtool intltool \
+  libsndfile-dev libcap-dev libjson0-dev libasound2-dev libavahi-client-dev libbluetooth-dev libglib2.0-dev \
+  libsamplerate0-dev libsbc-dev libspeexdsp-dev libssl-dev libtdb-dev libbluetooth-dev intltool autoconf \
+  autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev pkg-config python \
+  --no-install-recommends
+
+  sudo apt install bluez bluez-firmware libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev \
+  libreadline-dev libltdl-dev libsamplerate0-dev libsndfile1-dev libasound2-dev libavahi-client-dev \
+  libspeexdsp-dev liborc-0.4-dev intltool libtdb-dev libssl-dev libjson0-dev libsbc-dev libcap-dev \
+  --no-install-recommends
+}
+
+set_bluetooth_name() {
   if [ -z "${BLUETOOTH_NAME}" ] ; then
     read -p "Bluetooth device name: " BLUETOOTH_NAME
   else
     echo "Bluetooth device name: ${BLUETOOTH_NAME}"
   fi
+  echo "PRETTY_HOSTNAME=$BLUETOOTH_NAME" > /etc/machine-info
 }
 
 setup_volume_watcher() {
@@ -21,19 +40,19 @@ setup_pulse_audio() {
   update-rc.d pulseaudio defaults > /dev/null
 }
 
-# TODO fix / change 
-# rules with https://gist.github.com/oleq/24e09112b07464acbda1#file-a2dp-autoconnect
-
 add_udev_rule() {
   #add udev rule to trigger script on device connection
   LINE="KERNEL==\"input[0-9]*\", RUN+=\"/usr/local/bin/bluez-udev\""
-  echo "${LINE}" > cat /etc/udev/rules.d/99-input.rules
+  echo "${LINE}" > /etc/udev/rules.d/99-input.rules
 }
 
 setup_bluetooth() {
-  echo "PRETTY_HOSTNAME=$BLUETOOTH_NAME" > /etc/machine-info
-
-  # FIXME add also /etc/bluetooth/audio.conf
+  #create bluetooth audio.conf class 0x20041C == audio loud speaker
+  printf "%s\n" \
+  "Class = 0x20041C" \
+  "Enable = Source,Sink,Media,Socket" \
+  "load-module module-bluetooth-discover" \
+  ".endif" > /etc/bluetooth/audio.conf
 
   #change bt name and class in /etc/bluetooth/main.conf
   #TODO handle went name / class is alreday setted (no #) 
@@ -43,9 +62,12 @@ setup_bluetooth() {
   #bluez
   cp usr/local/bin/bluez-udev /usr/local/bin
   chmod 755 /usr/local/bin/bluez-udev
+  #TODO check if this is needed ...
   cp usr/local/bin/bluezutils.py /usr/local/bin
 
   #autotrust
+  #FIXME auto trust do not work ...
+  #new manual pair --> trust 
   cp usr/local/bin/simple-agent.autotrust /usr/local/bin
   chmod 755 /usr/local/bin/simple-agent.autotrust
 
@@ -80,7 +102,9 @@ restart_services() {
   service bluetooth-agent start
 }
 
-# setup sequence 
+# TODO cmdline args
+# setup sequence
+install_dependencies
 get_bluetooth_name
 setup_volume_watcher
 setup_pulse_audio
@@ -88,39 +112,3 @@ add_udev_rule
 setup_bluetooth
 setup_pulse
 restart_services
-
-
-# BT FIX
-build-from-source() {
-  remove_dir /etc/pulsebackup
-  mkdir /etc/pulsebackup
-  cp /etc/pulse/* /etc/pulsebackup/
-
-  cd ~
-  remove_dir pulseaudio
-  git clone --branch v6.0 https://github.com/pulseaudio/pulseaudio
-
-  cd ~
-  remove_dir json-c
-  git clone https://github.com/json-c/json-c.git
-  cd json-c
-  sh autogen.sh
-  ./configure 
-  make
-  make install
-  cd ~
-  remove_dir libsndfile
-  git clone git://github.com/erikd/libsndfile.git
-  cd libsndfile
-  ./autogen.sh
-  ./configure --enable-werror
-  make
-  make install
-  cd ~
-  cd pulseaudio
-  ./bootstrap.sh
-  make
-  make install
-  ldconfig
-  cp /etc/pulsebackup/* /etc/pulse
-}

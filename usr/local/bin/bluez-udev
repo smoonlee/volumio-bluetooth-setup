@@ -13,16 +13,16 @@ function log {
 function checkSource {
     SOURCE=$1
     # Get the current sources
-    local AVAILABLE_SOURCES=$(sudo su - "$BT_USER" -c "pactl list sources short")
+    local AVAILABLE_SOURCES=$(sudo su - "${BT_USER}" -c "pactl list sources short")
     # Check if any sources are currently running and that our new device is valid.
-    if [[ "$AVAILABLE_SOURCES" =~ RUNNING ]]; then
+    if [[ "${AVAILABLE_SOURCES}" =~ RUNNING ]]; then
         log "Source is already RUNNING. Available sources:"
-        log "$AVAILABLE_SOURCES"
+        log "${AVAILABLE_SOURCES}"
         return
     fi
-    if [[ ! "$AVAILABLE_SOURCES" =~ "$SOURCE" ]] ; then
+    if [[ ! "${AVAILABLE_SOURCES}" =~ ${SOURCE} ]] ; then
         log "Unrecognized source. Available sources:"
-        log "$AVAILABLE_SOURCES"
+        log "${AVAILABLE_SOURCES}"
         return
     fi
     log "Validated new source: $SOURCE"
@@ -39,15 +39,15 @@ function setVolume {
 function connect {
     log "Connecting $1."
     # Connect source to sink
-    sudo su - "$BT_USER" -c 'pactl load-module module-loopback source="$1" sink="$PA_SINK" rate=44100 adjust_time=0'
+    sudo su - "$BT_USER" -c "pactl load-module module-loopback source=\"$1\" sink=\"${PA_SINK}\" rate=44100 adjust_time=0"
 }
 
 log "Change for device $BT_MAC detected, running $ACTION."
 
 if [ "$ACTION" = "add" ] ; then
     INCOMING=bluez_source."$BT_MAC"
-    if [ ! -z $(checkSource "$INCOMING") ] ; then
-        connect "$INCOMING"
+    if [ ! -z "$(checkSource ${INCOMING})" ] ; then
+        connect "${INCOMING}"
         setVolume
     fi
 fi
