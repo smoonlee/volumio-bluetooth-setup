@@ -105,7 +105,7 @@ restart_services() {
 # TODO cmdline args
 # setup sequence
 install_dependencies
-get_bluetooth_name
+set_bluetooth_name
 setup_volume_watcher
 setup_pulse_audio
 add_udev_rule
